@@ -1,7 +1,8 @@
 import type { KajabiOrder, KajabiPerson } from './types';
 
 const KAJABI_SITE_URL = (process.env.KAJABI_SITE_URL || 'https://tania-khazaal.mykajabi.com').replace(/\/$/, '');
-const KAJABI_API_KEY = process.env.KAJABI_API_KEY || '';
+// The Kajabi "Secret" is used as the Bearer token; the "API Key" is the app identifier
+const KAJABI_API_KEY = process.env.KAJABI_API_SECRET || process.env.KAJABI_API_KEY || '';
 
 const PAID_STATUSES = ['paid', 'complete', 'completed'];
 const EXCLUDED_STATUSES = ['refunded', 'failed', 'cancelled', 'canceled', 'pending'];

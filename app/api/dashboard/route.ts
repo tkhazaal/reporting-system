@@ -1,20 +1,37 @@
 import { NextResponse } from 'next/server';
-import { readCustomerSummary, readProductPaths, readLastSynced, readOrders } from '@/lib/sheets';
-import { calculateDashboard } from '@/lib/calculations';
+import { fetchAllOrders, fetchAllPeople } from '@/lib/kajabi';
+import {
+  transformToCustomers,
+  transformToOrders,
+  transformToOrderItems,
+  buildCustomerSummaries,
+  calculateDashboard,
+} from '@/lib/calculations';
 import { fetchGA4TrafficData } from '@/lib/ga4';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [summaries, pathRows, lastSynced, orders] = await Promise.all([
-      readCustomerSummary(),
-      readProductPaths(),
-      readLastSynced(),
-      readOrders(),
+    // Fetch from Kajabi API directly
+    const [kajabiOrders, kajabiPeople] = await Promise.all([
+      fetchAllOrders(),
+      fetchAllPeople(),
     ]);
 
-    const data = calculateDashboard(summaries, pathRows, orders.length, lastSynced);
+    // Transform raw Kajabi data
+    const orderEmails = new Set(
+      kajabiOrders.map(o => (o.email || '').toLowerCase().trim()).filter(Boolean)
+    );
+    const customers = transformToCustomers(kajabiPeople, orderEmails);
+    const orders = transformToOrders(kajabiOrders);
+    const orderItems = transformToOrderItems(kajabiOrders);
+
+    // Build customer summaries and product paths
+    const { summaries, paths } = buildCustomerSummaries(orders, orderItems, customers);
+
+    // Calculate all dashboard metrics
+    const data = calculateDashboard(summaries, paths, orders.length, new Date().toISOString());
 
     // Fetch GA4 data if configured
     if (process.env.GA4_PROPERTY_ID) {
@@ -28,7 +45,7 @@ export async function GET() {
           totalConversions: 0,
           overallConversionRate: 0,
           lastUpdated: null,
-          error: ga4Err instanceof Error ? ga4Err.message : 'GA4 error',
+          error: ga4Err instanceof Error ? ga4Err.message : 'GA4 unavailable',
         };
       }
     }
@@ -36,6 +53,9 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Dashboard error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to load data' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to load data' },
+      { status: 500 }
+    );
   }
 }
