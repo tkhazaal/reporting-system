@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #F8FAFC;
+}
+
+.gradient-header {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4c1d95 60%, #6d28d9 100%);
+}
+
+.stat-card {
+  @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-md transition-shadow duration-200;
+}
+
+.section-card {
+  @apply bg-white rounded-2xl shadow-sm border border-slate-100;
+}
